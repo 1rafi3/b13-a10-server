@@ -3,7 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import Stripe from "stripe";
-import { toNodeHandler } from "better-auth/node";
+import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 process.env.NODE_ENV = isProd ? "production" : "development";
 import dbConnection from "./db.js"; // Ensures DB is connected
@@ -74,7 +74,31 @@ app.all("/api/auth/*", (req, res, next) => {
   return toNodeHandler(auth)(req, res);
 });
 
-// JSON and URL Encoded parsers for general API routes
+// Custom Google OAuth redirect - avoids cross-origin state_mismatch
+// Browser navigates here directly, so cookies stay same-origin
+app.get("/api/oauth/google", async (req, res) => {
+  try {
+    const callbackURL = req.query.callbackURL || process.env.CLIENT_URL || "https://a10-recipehub-client-roan.vercel.app/";
+    const headers = new Headers({
+      "content-type": "application/json",
+      "origin": process.env.BETTER_AUTH_URL || "https://server-tawny-sigma.vercel.app"
+    });
+    const response = await auth.api.signInSocial({
+      body: { provider: "google", callbackURL },
+      headers,
+      asResponse: true
+    });
+    const location = response.headers.get("location");
+    if (location) return res.redirect(location);
+    const data = await response.json();
+    if (data?.url) return res.redirect(data.url);
+    return res.status(500).json({ error: "Could not get Google OAuth URL" });
+  } catch (err) {
+    console.error("Google OAuth redirect error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
