@@ -88,6 +88,16 @@ app.get("/api/oauth/google", async (req, res) => {
       headers,
       asResponse: true
     });
+
+    // CRITICAL: Forward all Set-Cookie headers from Better Auth to the browser
+    // Without this, the state cookie is never stored and state_mismatch occurs
+    const setCookies = response.headers.getSetCookie
+      ? response.headers.getSetCookie()
+      : (response.headers.get("set-cookie") ? [response.headers.get("set-cookie")] : []);
+    for (const cookie of setCookies) {
+      res.append("Set-Cookie", cookie);
+    }
+
     const location = response.headers.get("location");
     if (location) return res.redirect(location);
     const data = await response.json();
