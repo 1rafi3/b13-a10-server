@@ -4,7 +4,8 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import Stripe from "stripe";
 import { toNodeHandler } from "better-auth/node";
-
+const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+process.env.NODE_ENV = isProd ? "production" : "development";
 import dbConnection from "./db.js"; // Ensures DB is connected
 import { auth } from "./auth.js";
 import { verifyJWT, verifyAdmin } from "./middleware.js";
@@ -63,7 +64,13 @@ app.use(cors({
 app.use(cookieParser());
 
 // Mount Better Auth handler BEFORE express.json() body parsing
-app.all("/api/auth/*", (req, res) => {
+app.all("/api/auth/*", (req, res, next) => {
+  if (req.path === "/api/auth/jwt" || req.path === "/api/auth/logout") {
+    return next();
+  }
+  if (process.env.NODE_ENV === "production") {
+    req.headers.origin = "https://server-tawny-sigma.vercel.app";
+  }
   return toNodeHandler(auth)(req, res);
 });
 
@@ -619,7 +626,7 @@ app.post("/api/payments/create-checkout-session", verifyJWT, async (req, res) =>
       metadata
     });
 
-    return res.json({ id: session.id, isMock: false });
+    return res.json({ id: session.id, url: session.url, isMock: false });
   } catch (error) {
     console.error("Create Checkout Session error:", error);
     // Even if Stripe errors out due to bad key, return Mock to keep user testing functional!

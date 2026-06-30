@@ -5,6 +5,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+process.env.NODE_ENV = isProd ? "production" : "development";
+
+if (!process.env.BETTER_AUTH_URL) {
+  process.env.BETTER_AUTH_URL = isProd
+    ? "https://server-tawny-sigma.vercel.app"
+    : "http://localhost:5000";
+}
+
 const trustedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -16,6 +25,8 @@ if (process.env.CLIENT_URL) {
   // Normalize by removing trailing slash if present
   trustedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, ""));
 }
+trustedOrigins.push("https://client-two-omega-46.vercel.app");
+trustedOrigins.push("https://client-jmgezjo1p-rwolkorimrafi-1631s-projects.vercel.app");
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
@@ -32,8 +43,8 @@ export const auth = betterAuth({
   trustedOrigins: trustedOrigins,
   advanced: {
     cookie: {
-      sameSite: "none",
-      secure: true
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production"
     }
   }
 });
