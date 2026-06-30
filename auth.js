@@ -27,6 +27,8 @@ if (process.env.CLIENT_URL) {
 }
 trustedOrigins.push("https://client-two-omega-46.vercel.app");
 trustedOrigins.push("https://client-jmgezjo1p-rwolkorimrafi-1631s-projects.vercel.app");
+trustedOrigins.push("https://a10-recipehub-client-roan.vercel.app");
+trustedOrigins.push("https://a10-recipehub-client-la2sj4mew-rwolkorimrafi-1631s-projects.vercel.app");
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
