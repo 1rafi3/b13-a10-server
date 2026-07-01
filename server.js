@@ -74,40 +74,7 @@ app.all("/api/auth/*", (req, res, next) => {
   return toNodeHandler(auth)(req, res);
 });
 
-// Custom Google OAuth redirect - avoids cross-origin state_mismatch
-// Browser navigates here directly, so cookies stay same-origin
-app.get("/api/oauth/google", async (req, res) => {
-  try {
-    const callbackURL = req.query.callbackURL || process.env.CLIENT_URL || "https://a10-recipehub-client-roan.vercel.app/";
-    const headers = new Headers({
-      "content-type": "application/json",
-      "origin": process.env.BETTER_AUTH_URL || "https://server-tawny-sigma.vercel.app"
-    });
-    const response = await auth.api.signInSocial({
-      body: { provider: "google", callbackURL },
-      headers,
-      asResponse: true
-    });
 
-    // CRITICAL: Forward all Set-Cookie headers from Better Auth to the browser
-    // Without this, the state cookie is never stored and state_mismatch occurs
-    const setCookies = response.headers.getSetCookie
-      ? response.headers.getSetCookie()
-      : (response.headers.get("set-cookie") ? [response.headers.get("set-cookie")] : []);
-    for (const cookie of setCookies) {
-      res.append("Set-Cookie", cookie);
-    }
-
-    const location = response.headers.get("location");
-    if (location) return res.redirect(location);
-    const data = await response.json();
-    if (data?.url) return res.redirect(data.url);
-    return res.status(500).json({ error: "Could not get Google OAuth URL" });
-  } catch (err) {
-    console.error("Google OAuth redirect error:", err);
-    return res.status(500).json({ error: err.message });
-  }
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
