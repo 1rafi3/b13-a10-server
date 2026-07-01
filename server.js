@@ -23,6 +23,10 @@ import Report from "./models/Report.js";
 import Payment from "./models/Payment.js";
 
 const app = express();
+
+app.get("/", (req, res) => {
+  res.send("RecipeHub API Server is running successfully!");
+});
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "recipehub-jwt-secret-key-2026";
 
@@ -67,9 +71,6 @@ app.use(cookieParser());
 app.all("/api/auth/*", (req, res, next) => {
   if (req.path === "/api/auth/jwt" || req.path === "/api/auth/logout") {
     return next();
-  }
-  if (process.env.NODE_ENV === "production") {
-    req.headers.origin = "https://server-tawny-sigma.vercel.app";
   }
   return toNodeHandler(auth)(req, res);
 });
